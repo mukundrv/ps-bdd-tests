@@ -1,0 +1,20 @@
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: persistent-pv
+spec:
+  capacity:
+    storage: 27000Gi
+  accessModes:
+    - ReadWriteMany
+  persistentVolumeReclaimPolicy: Retain
+  volumeMode: Filesystem
+  csi:
+    driver: parallelstore.csi.storage.gke.io
+    volumeHandle: "lab-gke-se/us-central1-a/test-instance-persistent/default-pool/default-container"
+    volumeAttributes:
+      accessPoints: 10.151.240.2, 10.151.240.4, 10.151.240.3
+      network: ps-vpc-nw
+      mountLocality: node
+  mountOptions:
+    - disable-caching
