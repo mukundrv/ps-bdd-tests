@@ -2,7 +2,7 @@ import tomli
 from kubernetes import client, config
 from kubernetes.client.configuration import Configuration
 from kubernetes.client.api_client import ApiClient
-from app.src.utils.logging_util import get_logger
+from src.utils.logging_util import get_logger
 import urllib3
 import base64
 
@@ -90,13 +90,13 @@ class KubernetesClient:
             if http_proxy:
                 logger.info(f"Configuring HTTPS proxy: {https_proxy}")
                 self.api_client.rest_client.pool_manager = urllib3.ProxyManager(
-                    proxy_url = https_proxy
+                    proxy_url = https_proxy,
                     cert_reqs = "CERT_REQUIRED" if verify_ssl else "CERT_NONE",
                 )
             elif http_proxy:
-              logger.info(f"Configuring HTTP proxy: {http_proxy}")
+                logger.info(f"Configuring HTTP proxy: {http_proxy}")
                 self.api_client.rest_client.pool_manager = urllib3.ProxyManager(
-                    proxy_url = http_proxy
+                    proxy_url = http_proxy,
                     cert_reqs = "CERT_REQUIRED" if verify_ssl else "CERT_NONE",
                 )
 

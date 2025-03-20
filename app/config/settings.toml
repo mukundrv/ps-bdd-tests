@@ -2,6 +2,7 @@
 config_mode = "local"  # Use "local" or "in-cluster"
 namespace = "ps"
 deployment_name = "ps-test"
+app_name = "nginx"
 
 [scaling]
 timeout = 600  # Timeout in seconds for operations

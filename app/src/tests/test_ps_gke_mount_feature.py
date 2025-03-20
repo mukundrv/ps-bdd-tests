@@ -3,6 +3,7 @@ from pytest_bdd import given, when, then, scenarios
 from src.utils.logging_util import get_logger
 import time
 from src.utils.config_util import load_config
+from kubernetes.stream import stream
 
 logger = get_logger(__name__)
 # Load configuration once at module level
@@ -11,7 +12,7 @@ CONFIG = load_config()
 scenarios("../features/parallelstore_gke_integration.feature")
 
 
-@given("a Kubernetes cluster is running")
+@given("a GKE cluster is running")
 def verify_cluster_running(k8s_client):
     """Verify that the Kubernetes cluster is accessible."""
     logger.info("Verifying Kubernetes cluster is running...")
@@ -19,7 +20,7 @@ def verify_cluster_running(k8s_client):
     logger.info("Kubernetes cluster verification successful.")
 
 
-@given('a deployment named "ps-test" exists')
+@given('a deployment named "ps-test" exists in the "ps" namespace')
 def verify_deployment_exists(k8s_client):
     """Ensure the deployment exists in the specified namespace."""
     namespace = CONFIG["k8s"]["namespace"]
@@ -37,6 +38,7 @@ def verify_pod_running(k8s_client):
     """Ensure the pod for the deployment is running."""
     namespace = CONFIG["k8s"]["namespace"]
     deployment_name = CONFIG["k8s"]["deployment_name"]
+    app_name = CONFIG["k8s"]["app_name"]
 
     # Retrieve CoreV1Api client for Pod checks
     core_api = k8s_client("CoreV1Api")
@@ -44,7 +46,7 @@ def verify_pod_running(k8s_client):
     retries = 10  # Retry up to 10 times (adjust as needed)
     for _ in range(retries):
         logger.info(f"Checking if pod for deployment '{deployment_name}' is running...")
-        pods = core_api.list_namespaced_pod(namespace=namespace, label_selector=f"app={deployment_name}")
+        pods = core_api.list_namespaced_pod(namespace=namespace, label_selector=f"app={app_name}")
         for pod in pods.items:
             if pod.status.phase == "Running":
                 logger.info(f"Pod '{pod.metadata.name}' is running.")
@@ -59,12 +61,13 @@ def verify_parallelstore_mount(k8s_client):
     namespace = CONFIG["k8s"]["namespace"]
     deployment_name = CONFIG["k8s"]["deployment_name"]
     mount_path = CONFIG["parallelstore"]["mount_path"]
+    app_name = CONFIG["k8s"]["app_name"]
 
     # Retrieve CoreV1Api client for pod exec
     core_api = k8s_client("CoreV1Api")
 
     # Get the pod name by label selector
-    pods = core_api.list_namespaced_pod(namespace=namespace, label_selector=f"app={deployment_name}")
+    pods = core_api.list_namespaced_pod(namespace=namespace, label_selector=f"app={app_name}")
     assert pods.items, f"No pod found for deployment '{deployment_name}'."
     pod_name = pods.items[0].metadata.name
 
@@ -74,7 +77,8 @@ def verify_parallelstore_mount(k8s_client):
     exec_command = ["/bin/sh", "-c", f"ls {mount_path}"]
 
     try:
-        exec_response = core_api.connect_get_namespaced_pod_exec(
+        exec_response = stream(
+            core_api.connect_get_namespaced_pod_exec,
             name=pod_name,
             namespace=namespace,
             command=exec_command,

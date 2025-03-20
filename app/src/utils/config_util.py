@@ -1,6 +1,6 @@
 import tomli
 import logging
-from app.src.utils.logging_util import get_logger
+from src.utils.logging_util import get_logger
 
 logger = get_logger(__name__)
 

@@ -4,7 +4,7 @@ metadata:
   name: persistent-pv
 spec:
   capacity:
-    storage: 27000Gi
+    storage: 16000Gi
   accessModes:
     - ReadWriteMany
   persistentVolumeReclaimPolicy: Retain
@@ -13,7 +13,7 @@ spec:
     driver: parallelstore.csi.storage.gke.io
     volumeHandle: "lab-gke-se/us-central1-a/test-instance-persistent/default-pool/default-container"
     volumeAttributes:
-      accessPoints: 10.151.240.2, 10.151.240.4, 10.151.240.3
+      accessPoints: 10.151.240.5, 10.151.240.2, 10.151.240.4
       network: ps-vpc-nw
       mountLocality: node
   mountOptions:
