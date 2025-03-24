@@ -4,7 +4,7 @@ metadata:
   name: ps-test  # Name of the deployment
   namespace: ps       # Change this if your namespace is different
 spec:
-  replicas: 1              # Number of desired pods
+  replicas: 3              # Number of desired pods
   selector:
     matchLabels:
       app: nginx

@@ -9,7 +9,7 @@ logger = get_logger(__name__)
 # Load configuration once at module level
 CONFIG = load_config()
 # Link the Gherkin feature file
-scenarios("../features/parallelstore_gke_integration.feature")
+scenarios("../features/parallelstore_multi_pod_mount.feature")
 
 
 @given("a GKE cluster is running")
@@ -55,7 +55,7 @@ def verify_pod_running(k8s_client):
     
     pytest.fail(f"Pod for deployment '{deployment_name}' did not start running.")
 
-@then("the Parallelstore mount should be accessible")
+@then("the Parallelstore mount should be accessible by all pods in the deployment")
 def verify_parallelstore_mount(k8s_client):
     """Ensure the Parallelstore mount is accessible inside the pod."""
     namespace = CONFIG["k8s"]["namespace"]
@@ -63,28 +63,25 @@ def verify_parallelstore_mount(k8s_client):
     mount_path = CONFIG["parallelstore"]["mount_path"]
     app_name = CONFIG["k8s"]["app_name"]
 
-    # Retrieve CoreV1Api client for pod exec
     core_api = k8s_client("CoreV1Api")
-
-    # Get the pod name by label selector
     pods = core_api.list_namespaced_pod(namespace=namespace, label_selector=f"app={app_name}")
-    assert pods.items, f"No pod found for deployment '{deployment_name}'."
-    pod_name = pods.items[0].metadata.name
 
-    logger.info(f"Checking if Parallelstore mount is accessible on pod '{pod_name}' at path '{mount_path}'...")
+    assert pods.items, "No pods found for the deployment."
 
-    # Run the 'ls' command inside the pod to check if mount is accessible
-    exec_command = ["/bin/sh", "-c", f"ls {mount_path}"]
+    for pod in pods.items:
+        pod_name = pod.metadata.name
+        logger.info(f"Checking mount access in pod '{pod_name}' at path '{mount_path}'...")
+        exec_command = ["/bin/sh", "-c", f"ls {mount_path}"]
 
-    try:
-        exec_response = stream(
-            core_api.connect_get_namespaced_pod_exec,
-            name=pod_name,
-            namespace=namespace,
-            command=exec_command,
-            stderr=True, stdin=False, stdout=True, tty=False
-        )
-        assert exec_response.strip(), f"Parallelstore mount at '{mount_path}' is empty or inaccessible."
-        logger.info(f"Parallelstore mount at '{mount_path}' is accessible.")
-    except Exception as e:
-        pytest.fail(f"Failed to access Parallelstore mount: {str(e)}")
+        try:
+            exec_response = stream(
+                core_api.connect_get_namespaced_pod_exec,
+                name=pod_name,
+                namespace=namespace,
+                command=exec_command,
+                stderr=True, stdin=False, stdout=True, tty=False
+            )
+            assert exec_response.strip(), f"Mount path '{mount_path}' is empty or inaccessible in pod '{pod_name}'."
+            logger.info(f"Mount path accessible in pod '{pod_name}'.")
+        except Exception as e:
+            pytest.fail(f"Failed to access mount path in pod '{pod_name}': {str(e)}")

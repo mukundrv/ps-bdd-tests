@@ -9,7 +9,7 @@ logger = get_logger(__name__)
 # Load configuration once at module level
 CONFIG = load_config()
 # Link the Gherkin feature file
-scenarios("../features/parallelstore_gke_integration.feature")
+scenarios("../features/parallelstore_write_read_file.feature")
 
 
 @given("a GKE cluster is running")
@@ -55,36 +55,46 @@ def verify_pod_running(k8s_client):
     
     pytest.fail(f"Pod for deployment '{deployment_name}' did not start running.")
 
-@then("the Parallelstore mount should be accessible")
-def verify_parallelstore_mount(k8s_client):
-    """Ensure the Parallelstore mount is accessible inside the pod."""
+@then("a file can be written to and read from the Parallelstore mount")
+def test_parallelstore_read_write(k8s_client):
+    """Test read and write operations on the Parallelstore mount."""
     namespace = CONFIG["k8s"]["namespace"]
-    deployment_name = CONFIG["k8s"]["deployment_name"]
     mount_path = CONFIG["parallelstore"]["mount_path"]
     app_name = CONFIG["k8s"]["app_name"]
-
-    # Retrieve CoreV1Api client for pod exec
     core_api = k8s_client("CoreV1Api")
 
-    # Get the pod name by label selector
+    # Get pod name
     pods = core_api.list_namespaced_pod(namespace=namespace, label_selector=f"app={app_name}")
-    assert pods.items, f"No pod found for deployment '{deployment_name}'."
+    assert pods.items, f"No pods found for app '{app_name}' in namespace '{namespace}'."
     pod_name = pods.items[0].metadata.name
 
-    logger.info(f"Checking if Parallelstore mount is accessible on pod '{pod_name}' at path '{mount_path}'...")
+    # Generate a unique test file name
+    test_filename = f"test_file.txt"
+    test_filepath = f"{mount_path}/{test_filename}"
+    test_content = "Hello Parallelstore!"
 
-    # Run the 'ls' command inside the pod to check if mount is accessible
-    exec_command = ["/bin/sh", "-c", f"ls {mount_path}"]
+    # Step 1: Write a file to the mount path
+    logger.info(f"Writing test file '{test_filename}' to Parallelstore...")
+    write_command = ["/bin/sh", "-c", f"echo '{test_content}' > {test_filepath}"]
+    stream(
+        core_api.connect_get_namespaced_pod_exec,
+        name=pod_name,
+        namespace=namespace,
+        command=write_command,
+        stderr=True, stdin=False, stdout=True, tty=False
+    )
 
-    try:
-        exec_response = stream(
-            core_api.connect_get_namespaced_pod_exec,
-            name=pod_name,
-            namespace=namespace,
-            command=exec_command,
-            stderr=True, stdin=False, stdout=True, tty=False
-        )
-        assert exec_response.strip(), f"Parallelstore mount at '{mount_path}' is empty or inaccessible."
-        logger.info(f"Parallelstore mount at '{mount_path}' is accessible.")
-    except Exception as e:
-        pytest.fail(f"Failed to access Parallelstore mount: {str(e)}")
+    # Step 2: Read the file back
+    logger.info(f"Reading test file '{test_filename}' from Parallelstore...")
+    read_command = ["/bin/sh", "-c", f"cat {test_filepath}"]
+    read_response = stream(
+        core_api.connect_get_namespaced_pod_exec,
+        name=pod_name,
+        namespace=namespace,
+        command=read_command,
+        stderr=True, stdin=False, stdout=True, tty=False
+    )
+
+    assert read_response.strip() == test_content, \
+        f"Content mismatch. Expected: '{test_content}', Got: '{read_response.strip()}'"
+    logger.info("Read/write test passed.")
