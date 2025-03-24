@@ -1,0 +1,3 @@
+version: v1
+tasks:
+    - ref: container-image-build

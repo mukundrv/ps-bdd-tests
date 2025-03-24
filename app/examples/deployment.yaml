@@ -1,0 +1,28 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ps-test  # Name of the deployment
+  namespace: ps       # Change this if your namespace is different
+spec:
+  replicas: 3              # Number of desired pods
+  selector:
+    matchLabels:
+      app: nginx
+  template:
+    metadata:
+      labels:
+        app: nginx
+    spec:
+      containers:
+        - name: nodemount-testing  # Only the file reader container
+          image: nginx # Use a lightweight Python image
+          ports:
+            - containerPort: 7001
+          volumeMounts:
+            - name: persistent-pvc
+              mountPath: /data
+              readOnly: false  # Mount the PVC to the desired path
+      volumes:
+        - name: persistent-pvc
+          persistentVolumeClaim:
+            claimName: persistent-pvc

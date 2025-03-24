@@ -1,0 +1,20 @@
+[k8s]
+config_mode = "local"  # Use "local" or "in-cluster"
+namespace = "ps"
+deployment_name = "ps-test"
+app_name = "nginx"
+
+[scaling]
+timeout = 600  # Timeout in seconds for operations
+interval = 10   # Interval in seconds to check status
+
+[logging]
+log_level = "INFO"  # Possible values: DEBUG, INFO, WARNING, ERROR, CRITICAL
+
+[proxy]
+http_proxy = ""
+https_proxy = ""
+verify_ssl = true  # Set to false to disable SSL verification
+
+[parallelstore]
+mount_path = "/data"
