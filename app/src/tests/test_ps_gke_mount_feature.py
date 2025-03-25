@@ -63,18 +63,14 @@ def verify_parallelstore_mount(k8s_client):
     mount_path = CONFIG["parallelstore"]["mount_path"]
     app_name = CONFIG["k8s"]["app_name"]
 
-    # Retrieve CoreV1Api client for pod exec
     core_api = k8s_client("CoreV1Api")
-
-    # Get the pod name by label selector
     pods = core_api.list_namespaced_pod(namespace=namespace, label_selector=f"app={app_name}")
     assert pods.items, f"No pod found for deployment '{deployment_name}'."
     pod_name = pods.items[0].metadata.name
 
     logger.info(f"Checking if Parallelstore mount is accessible on pod '{pod_name}' at path '{mount_path}'...")
 
-    # Run the 'ls' command inside the pod to check if mount is accessible
-    exec_command = ["/bin/sh", "-c", f"ls {mount_path}"]
+    exec_command = ["/bin/sh", "-c", f"ls {mount_path} || echo 'FAILED'"]
 
     try:
         exec_response = stream(
@@ -83,8 +79,12 @@ def verify_parallelstore_mount(k8s_client):
             namespace=namespace,
             command=exec_command,
             stderr=True, stdin=False, stdout=True, tty=False
-        )
-        assert exec_response.strip(), f"Parallelstore mount at '{mount_path}' is empty or inaccessible."
-        logger.info(f"Parallelstore mount at '{mount_path}' is accessible.")
+        ).strip()
+
+        if "FAILED" in exec_response or "No such file" in exec_response or "Permission denied" in exec_response:
+            pytest.fail(f"Parallelstore mount at '{mount_path}' is inaccessible or missing.")
+        else:
+            logger.info(f"Mount path '{mount_path}' is accessible. Contents:\n{exec_response or '[Empty]'}")
+
     except Exception as e:
         pytest.fail(f"Failed to access Parallelstore mount: {str(e)}")
