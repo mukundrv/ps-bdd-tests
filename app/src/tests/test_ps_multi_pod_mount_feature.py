@@ -35,7 +35,7 @@ def verify_deployment_exists(k8s_client):
 
 @when('I scale "ps-test" to 10 replicas')
 def scale_deployment_to_1000(k8s_client):
-    """Scale the deployment to 1000 replicas and monitor the progress."""
+    """Scale the deployment to 10 replicas and monitor the progress."""
     namespace = CONFIG["k8s"]["namespace"]
     deployment_name = CONFIG["k8s"]["deployment_name"]
     replicas = 10
