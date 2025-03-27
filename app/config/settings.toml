@@ -18,3 +18,8 @@ verify_ssl = true  # Set to false to disable SSL verification
 
 [parallelstore]
 mount_path = "/data"
+instance_name = "test-instance-persistent"
+region = "us-central1-a"
+
+[GCS]
+bucket_name= "import-export-1234"

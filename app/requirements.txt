@@ -32,3 +32,4 @@ urllib3==2.2.3
 websocket-client==1.8.0
 tomli
 toml
+google-cloud-storage
