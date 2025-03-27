@@ -117,7 +117,7 @@ def verify_file_in_gcs(k8s_client):
 
     logger.info(f"Checking if Parallelstore mount is accessible on pod '{pod_name}' at path '{mount_path}'...")
 
-    exec_command = ["/bin/sh", "-c", f"ls {mount_path}"]
+    exec_command = ["/bin/sh", "-c", f"find {mount_path} -type f | sed 's|^{mount_path}/||' | sed 's|^/||'"]
 
     try:
         output = stream(
