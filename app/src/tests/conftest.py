@@ -2,6 +2,8 @@ import pytest
 import time
 import logging
 from src.utils.k8s_client import KubernetesClient
+from google.cloud import storage
+import os
 
 # Configure global logging
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
@@ -44,4 +46,13 @@ def k8s_client():
 
     return get_client
 
-
+@pytest.fixture(scope="module")
+def setup_gcs():
+    # Ensure you have GCS credentials set up
+    assert os.getenv("GOOGLE_APPLICATION_CREDENTIALS"), "Set GOOGLE_APPLICATION_CREDENTIALS env variable"
+    
+    # Cleanup function after tests (optional)
+    yield
+    
+    # Cleanup logic, if needed, to remove files from GCS or Parallelstore after tests
+    pass
