@@ -3,6 +3,8 @@ config_mode = "local"  # Use "local" or "in-cluster"
 namespace = "ps"
 deployment_name = "ps-test"
 app_name = "nginx"
+perf_deployment_name = "ps-perf"
+perf_app_name = " threading-metric-exporter-app"
 
 [scaling]
 timeout = 600  # Timeout in seconds for operations
@@ -20,6 +22,7 @@ verify_ssl = true  # Set to false to disable SSL verification
 mount_path = "/data"
 instance_name = "test-instance-persistent"
 region = "us-central1-a"
+project_id = "lab-gke-se"
 
 [GCS]
 bucket_name= "import-export-1234"

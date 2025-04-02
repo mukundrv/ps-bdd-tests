@@ -33,3 +33,4 @@ websocket-client==1.8.0
 tomli
 toml
 google-cloud-storage
+google-cloud-monitoring

@@ -1,0 +1,92 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: threading-metric-cm
+  namespace: ps 
+data:
+  read_file.py: |
+    from prometheus_client import start_http_server, Histogram
+    import time
+    import logging
+    import random
+    import os
+    import signal  # Import signal module
+    from concurrent.futures import ThreadPoolExecutor  # Import ThreadPoolExecutor
+    import threading
+    import fcntl
+
+    # Set up logging
+    logger = logging.getLogger()
+    logger.setLevel(logging.INFO)
+    
+    # Get the pod name from the environment variable
+    pod_name = os.getenv('POD_NAME', 'unknown_pod')
+
+    # Create a file handler for error logging
+    error_handler = logging.FileHandler('/data/error.log') 
+    error_handler.setLevel(logging.ERROR)
+
+    # Create a console handler for info logging
+    console_handler = logging.StreamHandler()
+    console_handler.setLevel(logging.INFO)
+
+    # Create a formatter and set it for both handlers
+    formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s [Thread: %(threadName)s]')
+    error_handler.setFormatter(formatter)
+    console_handler.setFormatter(formatter)
+
+    # Add the handlers to the logger
+    logger.addHandler(error_handler)
+    logger.addHandler(console_handler)
+
+    # Path to the file in Parallelstore
+    
+
+    # Create a Histogram to track read latency
+    read_latency = Histogram('parallelstore_read_latency_seconds', 'Latency of read operations in seconds')
+
+    shutdown_event = threading.Event()  # Create a shutdown event
+
+    def signal_handler(sig, frame):
+        logger.info("Received SIGTERM, shutting down...")
+        shutdown_event.set()  # Set the shutdown event
+
+    signal.signal(signal.SIGTERM, signal_handler)  # Register the signal handler
+
+    def read_file():
+        while not shutdown_event.is_set():  # Check if shutdown is initiated
+            try:
+                DATA_DIR = "/data"
+                filename_list = [f for f in os.listdir(DATA_DIR) if f.startswith("test_file_") and f.endswith(".txt")]
+                filename=random.choice(filename_list)
+                FILE_PATH = '/data/'+str(filename)  # Adjust the path as necessary
+
+                start_time = time.time()  # Start time for latency measurement
+                logger.info(f"Starting to read {filename} [Thread: {threading.current_thread().name}]")
+                
+                # Open the file using os.open with O_DIRECT
+                fd = os.open(FILE_PATH, os.O_RDONLY | os.O_DIRECT)
+                with os.fdopen(fd, 'rb') as file:  # Open file descriptor in binary mode
+                    data = file.read()
+                    data = data.decode('utf-8')  # Decode bytes to string
+                    bytes_read = len(data)
+                    latency = time.time() - start_time  # Calculate latency
+                    read_latency.observe(latency)  # Record the latency in the histogram
+                    logger.info(f"{filename} read successfully: {bytes_read} bytes, Latency: {latency:.4f} seconds [Thread: {threading.current_thread().name}]")
+                
+                time.sleep(1)  # Simulate additional processing time
+            except Exception as e:
+                logger.error(f"Error in {pod_name} reading file: {e}")
+
+    if __name__ == '__main__':
+        # Start the Prometheus metrics server on port 7001
+        start_http_server(7001)
+        logger.info("Prometheus metrics server started on port 7001.")
+        
+        # Use ThreadPoolExecutor to manage threads
+        with ThreadPoolExecutor(max_workers=10) as executor:
+            while not shutdown_event.is_set():  # Check if shutdown is initiated
+                for _ in range(20):  # Submit 10 read tasks
+                    if not shutdown_event.is_set():  # Only submit if not shutting down
+                        executor.submit(read_file)
+                time.sleep(0.1)  # Reduced sleep time for more frequent submissions
