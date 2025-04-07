@@ -13,6 +13,8 @@ spec:
       labels:
         app: threading-metric-exporter-app 
     spec:
+      nodeSelector:
+        cloud.google.com/gke-nodepool: pool-4  # Add this line
       containers:
         - name: threading-metric-expoter-container  # Only the file reader container
           image: us-central1-docker.pkg.dev/lab-gke-se/flask/flask-app:latest  # Use a lightweight Python image
@@ -22,7 +24,7 @@ spec:
           volumeMounts:
             - name: threading-metric-cm
               mountPath: /app  # Mount the ConfigMap
-            - name: ps-static-pvc
+            - name: persistent-pvc
               mountPath: /data
               readOnly: false  # Mount the PVC to the desired path
           env:
@@ -41,6 +43,6 @@ spec:
         - name: threading-metric-cm
           configMap:
             name: threading-metric-cm
-        - name: ps-static-pvc
+        - name: persistent-pvc
           persistentVolumeClaim:
-            claimName: ps-static-instance-pvc
+            claimName: persistent-pvc

@@ -7,7 +7,7 @@ perf_deployment_name = "ps-perf"
 perf_app_name = " threading-metric-exporter-app"
 
 [scaling]
-timeout = 600  # Timeout in seconds for operations
+timeout = 3600  # Timeout in seconds for operations
 interval = 10   # Interval in seconds to check status
 
 [logging]

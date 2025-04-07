@@ -50,7 +50,7 @@ def prepare_parallelstore_files(k8s_client):
     assert pods.items, f"No pods found for app '{app_name}' in namespace '{namespace}'."
     pod_name = pods.items[0].metadata.name
 
-    num_files = 10
+    num_files = 100
     file_size_mb = 5
     file_size_bytes = file_size_mb * 1024 * 1024  # Convert to bytes
 
@@ -103,7 +103,7 @@ def scale_deployment(k8s_client):
     """Scale the deployment to 5000 replicas and monitor the progress."""
     namespace = CONFIG["k8s"]["namespace"]
     deployment_name = CONFIG["k8s"]["perf_deployment_name"]
-    replicas = 10
+    replicas = 5000
     timeout = CONFIG["scaling"]["timeout"]  # Timeout in seconds
     interval = 10  # Polling interval in seconds
 
@@ -131,7 +131,7 @@ def scale_deployment(k8s_client):
         raise RuntimeError(f"Deployment '{deployment_name}' did not scale to {replicas} replicas within {timeout} seconds.")
 
     # Wait for 30 minutes before proceeding
-    wait_time = 1 * 60  # 30 minutes in seconds
+    wait_time = 30 * 60  # 30 minutes in seconds
     logger.info(f"Waiting for {wait_time / 60} minutes to let all pods run before performance testing...")
     time.sleep(wait_time)
     logger.info("30-minute waiting period completed. Proceeding with performance validation.")
@@ -147,7 +147,7 @@ def validate_parallelstore_metrics():
     EXPECTED_IOPS = 30000
     EXPECTED_THROUGHPUT_MBPS = 1.15  # 1GB/s
 
-    def fetch_metric(metric_type):
+    def fetch_metric(metric_type, instance_id):
         """Query Cloud Monitoring API for Parallelstore metrics and return the max value."""
         client = monitoring_v3.MetricServiceClient()
         project_name = f"projects/{project_id}"
@@ -155,10 +155,10 @@ def validate_parallelstore_metrics():
         # Query last 15 minutes of data
         interval = monitoring_v3.TimeInterval(
             end_time={"seconds": int(time.time())},
-            start_time={"seconds": int(time.time() - 60)},  # Last 30 minutes
+            start_time={"seconds": int(time.time() - 1800)},  # Last 30 minutes
         )
 
-        filter_str = f'metric.type="{metric_type}"'
+        filter_str = f'metric.type="{metric_type}" AND resource.type="parallelstore.googleapis.com/Instance" AND resource.label.instance_id="{instance_id}"'
         request = monitoring_v3.ListTimeSeriesRequest(
             name=project_name,
             filter=filter_str,
@@ -178,17 +178,17 @@ def validate_parallelstore_metrics():
     iops_metric = "parallelstore.googleapis.com/instance/read_ops_count"
     throughput_metric = "parallelstore.googleapis.com/instance/transferred_byte_count"
 
-    # actual_iops = fetch_metric(iops_metric)
-    # actual_throughput = fetch_metric(throughput_metric)
-    actual_cpu = fetch_metric("kubernetes.io/container/cpu/core_usage_time")
+    actual_iops = fetch_metric(iops_metric, instance_id)
+    actual_throughput = fetch_metric(throughput_metric, instance_id)
+    # actual_cpu = fetch_metric("kubernetes.io/container/cpu/core_usage_time")
 
     logger.info(f"Retrieved Parallelstore Metrics:")
-    logger.info(f"CPU Usage: {actual_cpu}")
-    # logger.info(f"Max IOPS: {actual_iops} (Expected: {EXPECTED_IOPS})")
-    # logger.info(f"Max Throughput: {actual_throughput} MBps (Expected: {EXPECTED_THROUGHPUT_MBPS})")
+    # logger.info(f"CPU Usage: {actual_cpu}")
+    logger.info(f"Max IOPS: {actual_iops} (Expected: {EXPECTED_IOPS})")
+    logger.info(f"Max Throughput: {actual_throughput} MBps (Expected: {EXPECTED_THROUGHPUT_MBPS})")
 
     # Validation against expected benchmarks
-    # assert actual_iops is not None and actual_iops >= EXPECTED_IOPS, f"IOPS too low: {actual_iops}"
-    # assert actual_throughput is not None and actual_throughput >= EXPECTED_THROUGHPUT_MBPS, f"Throughput too low: {actual_throughput} MBps"
+    assert actual_iops is not None and actual_iops >= EXPECTED_IOPS, f"IOPS too low: {actual_iops}"
+    assert actual_throughput is not None and actual_throughput >= EXPECTED_THROUGHPUT_MBPS, f"Throughput too low: {actual_throughput} MBps"
 
-    # logger.info("Parallelstore performance meets GCP benchmarks!")
+    logger.info("Parallelstore performance meets GCP benchmarks!")
