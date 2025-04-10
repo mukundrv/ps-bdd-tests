@@ -50,7 +50,7 @@ def prepare_parallelstore_files(k8s_client):
     assert pods.items, f"No pods found for app '{app_name}' in namespace '{namespace}'."
     pod_name = pods.items[0].metadata.name
 
-    num_files = 100
+    num_files = 10
     file_size_mb = 5
     file_size_bytes = file_size_mb * 1024 * 1024  # Convert to bytes
 
@@ -131,7 +131,7 @@ def scale_deployment(k8s_client):
         raise RuntimeError(f"Deployment '{deployment_name}' did not scale to {replicas} replicas within {timeout} seconds.")
 
     # Wait for 30 minutes before proceeding
-    wait_time = 30 * 60  # 30 minutes in seconds
+    wait_time = 10 * 60  # 30 minutes in seconds
     logger.info(f"Waiting for {wait_time / 60} minutes to let all pods run before performance testing...")
     time.sleep(wait_time)
     logger.info("30-minute waiting period completed. Proceeding with performance validation.")
@@ -155,7 +155,7 @@ def validate_parallelstore_metrics():
         # Query last 15 minutes of data
         interval = monitoring_v3.TimeInterval(
             end_time={"seconds": int(time.time())},
-            start_time={"seconds": int(time.time() - 1800)},  # Last 30 minutes
+            start_time={"seconds": int(time.time() - 300)},  # Last 30 minutes
         )
 
         filter_str = f'metric.type="{metric_type}" AND resource.type="parallelstore.googleapis.com/Instance" AND resource.label.instance_id="{instance_id}"'

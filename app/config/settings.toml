@@ -20,7 +20,7 @@ verify_ssl = true  # Set to false to disable SSL verification
 
 [parallelstore]
 mount_path = "/data"
-instance_name = "test-instance-persistent"
+instance_name = "test-persistent-instance"
 region = "us-central1-a"
 project_id = "lab-gke-se"
 
