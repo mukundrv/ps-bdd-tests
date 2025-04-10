@@ -1,0 +1,48 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ps-perf   # Name of the deployment
+  namespace: ps       # Change this if your namespace is different
+spec:
+  replicas: 1              # Number of desired pods
+  selector:
+    matchLabels:
+      app: threading-metric-exporter-app 
+  template:
+    metadata:
+      labels:
+        app: threading-metric-exporter-app 
+    spec:
+      nodeSelector:
+        cloud.google.com/gke-nodepool: pool-4  # Add this line
+      containers:
+        - name: threading-metric-expoter-container  # Only the file reader container
+          image: us-central1-docker.pkg.dev/lab-gke-se/flask/flask-app:latest  # Use a lightweight Python image
+          command: ["python", "/app/read_file.py"]  # Command to run the script
+          ports:
+            - containerPort: 7001
+          volumeMounts:
+            - name: threading-metric-cm
+              mountPath: /app  # Mount the ConfigMap
+            - name: persistent-pvc
+              mountPath: /data
+              readOnly: false  # Mount the PVC to the desired path
+          env:
+            - name: POD_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
+          # resources:
+          #   requests:
+          #     cpu: "100m"      # Minimum CPU guaranteed
+          #     memory: "700Mi"  # Minimum memory guaranteed
+          #   limits:
+          #     cpu: "200m"      # Maximum CPU allowed
+          #     memory: "1Gi"    # Increased maximum memory allowed
+      volumes:
+        - name: threading-metric-cm
+          configMap:
+            name: threading-metric-cm
+        - name: persistent-pvc
+          persistentVolumeClaim:
+            claimName: persistent-pvc

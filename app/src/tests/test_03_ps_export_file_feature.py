@@ -154,4 +154,4 @@ def verify_file_in_gcs(k8s_client):
             logger.error(f"Error occurred while checking '{filename}' in GCS: {str(e)}")
             raise
 
-    logger.info("✅ All files in Parallelstore are found in GCS.")
+    logger.info("All files in Parallelstore are found in GCS.")

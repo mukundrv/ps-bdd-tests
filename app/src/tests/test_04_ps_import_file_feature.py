@@ -143,4 +143,4 @@ def verify_files_in_parallelstore(k8s_client):
         logger.error(f"The following files are missing in Parallelstore: {missing_files}")
         raise FileNotFoundError(f"Files missing in Parallelstore: {missing_files}")
     else:
-        logger.info("✅ All files in the GCS bucket are present in Parallelstore.")
+        logger.info("All files in the GCS bucket are present in Parallelstore.")
