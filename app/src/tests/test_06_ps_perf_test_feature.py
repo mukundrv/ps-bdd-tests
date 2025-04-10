@@ -98,7 +98,7 @@ def prepare_parallelstore_files(k8s_client):
 
     logger.info("Successfully created 100 test files in Parallelstore.")
 
-@when('the deployment has 5000 replicas up and running for 30 min')
+@when('the deployment has 5000 replicas up and running for 10 min')
 def scale_deployment(k8s_client):
     """Scale the deployment to 5000 replicas and monitor the progress."""
     namespace = CONFIG["k8s"]["namespace"]
@@ -130,13 +130,13 @@ def scale_deployment(k8s_client):
         logger.error(f"Deployment '{deployment_name}' did not scale to {replicas} replicas within {timeout} seconds.")
         raise RuntimeError(f"Deployment '{deployment_name}' did not scale to {replicas} replicas within {timeout} seconds.")
 
-    # Wait for 30 minutes before proceeding
-    wait_time = 10 * 60  # 30 minutes in seconds
+    # Wait for 10 minutes before proceeding
+    wait_time = 10 * 60  # 10 minutes in seconds
     logger.info(f"Waiting for {wait_time / 60} minutes to let all pods run before performance testing...")
     time.sleep(wait_time)
-    logger.info("30-minute waiting period completed. Proceeding with performance validation.")
+    logger.info("10-minute waiting period completed. Proceeding with performance validation.")
 
-@then("the Parallelstore IOPS and throughput should be within the GCP official benchmarks after 30min test")
+@then("the Parallelstore IOPS and throughput should be within the GCP official benchmarks after 10min test")
 def validate_parallelstore_metrics():
     """Fetch and validate Parallelstore IOPS and throughput using Cloud Monitoring API."""
     project_id = CONFIG["parallelstore"]["project_id"]
@@ -155,7 +155,7 @@ def validate_parallelstore_metrics():
         # Query last 15 minutes of data
         interval = monitoring_v3.TimeInterval(
             end_time={"seconds": int(time.time())},
-            start_time={"seconds": int(time.time() - 300)},  # Last 30 minutes
+            start_time={"seconds": int(time.time() - 300)},  # Last 10 minutes
         )
 
         filter_str = f'metric.type="{metric_type}" AND resource.type="parallelstore.googleapis.com/Instance" AND resource.label.instance_id="{instance_id}"'
