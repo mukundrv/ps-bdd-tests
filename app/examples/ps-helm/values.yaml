@@ -1,0 +1,30 @@
+pv:
+  name: persistent-pv
+  storage: 27000Gi
+  volumeHandle: "lab-gke-se/us-central1-a/test-persistent-instance/default-pool/default-container"
+  accessPoints: "10.151.240.66, 10.151.240.67, 10.151.240.68"
+  network: ps-vpc-nw
+
+pvc:
+  name: persistent-pvc
+  storage: 27000Gi
+
+deployment:
+  name: ps-test
+  namespace: ps
+  replicas: 1
+  serviceAccountName: import-export
+  container:
+    name: nodemount-testing
+    image: nginx
+    port: 7001
+    mountPath: /data
+    readOnly: false
+
+perfDeployment:
+  name: ps-perf
+  namespace: ps
+  nodeSelector:
+    key: cloud.google.com/gke-nodepool
+    value: pool-4
+  image: us-central1-docker.pkg.dev/lab-gke-se/flask/flask-app:latest

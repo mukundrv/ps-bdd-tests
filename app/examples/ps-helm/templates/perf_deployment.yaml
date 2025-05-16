@@ -1,0 +1,41 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Values.perfDeployment.name }}
+  namespace: {{ .Values.perfDeployment.namespace }}
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: threading-metric-exporter-app
+  template:
+    metadata:
+      labels:
+        app: threading-metric-exporter-app
+    spec:
+      nodeSelector:
+        {{ .Values.perfDeployment.nodeSelector.key }}: {{ .Values.perfDeployment.nodeSelector.value }}
+      containers:
+        - name: threading-metric-expoter-container
+          image: {{ .Values.perfDeployment.image }}
+          command: ["python", "/app/read_file.py"]
+          ports:
+            - containerPort: 7001
+          volumeMounts:
+            - name: threading-metric-cm
+              mountPath: /app
+            - name: persistent-pvc
+              mountPath: /data
+              readOnly: false
+          env:
+            - name: POD_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
+      volumes:
+        - name: threading-metric-cm
+          configMap:
+            name: threading-metric-cm
+        - name: persistent-pvc
+          persistentVolumeClaim:
+            claimName: {{ .Values.pvc.name }}

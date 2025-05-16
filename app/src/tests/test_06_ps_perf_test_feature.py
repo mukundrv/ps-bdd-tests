@@ -51,8 +51,8 @@ def prepare_parallelstore_files(k8s_client):
     pod_name = pods.items[0].metadata.name
 
     num_files = 10
-    file_size_mb = 5
-    file_size_bytes = file_size_mb * 1024 * 1024  # Convert to bytes
+    file_size_kb = 5  # 5KB
+    file_size_bytes = file_size_kb * 1024  # Convert to bytes
 
     # Step 1: **Remove all existing files in the mount path**
     logger.info(f"Clearing all files in {mount_path} before creating new ones.")
@@ -75,7 +75,7 @@ def prepare_parallelstore_files(k8s_client):
         
         # Generate a random content pattern
         test_content = "".join(random.choices(string.ascii_letters + string.digits, k=1024))  # 1KB of random text
-        repeat_count = file_size_bytes // len(test_content)  # Repeat to make it 5MB
+        repeat_count = file_size_bytes // len(test_content)  # Repeat to make it 5KB
 
         logger.debug(f"Creating file {i+1}/{num_files}: {test_filename}")
 
