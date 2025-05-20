@@ -1,0 +1,29 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ps-test
+  namespace: xcs-test
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: nginx
+  template:
+    metadata:
+      labels:
+        app: nginx
+    spec:
+      # serviceAccountName: import-export
+      containers:
+        - name: nodemount-testing
+          image: nginx  
+          ports:
+            - containerPort: 7001
+          volumeMounts:
+            - name: ps-pvc
+              mountPath: /libraries
+              readOnly: false
+      volumes:
+        - name: ps-pvc
+          persistentVolumeClaim:
+            claimName: ps-pvc
