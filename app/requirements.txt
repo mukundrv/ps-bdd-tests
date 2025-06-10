@@ -22,7 +22,7 @@ pytest-bdd==8.0.0
 pytest-cov==6.0.0
 python-dateutil==2.9.0.post0
 PyYAML==6.0.2
-requests==2.32.3
+requests==2.32.4
 requests-oauthlib==2.0.0
 rsa==4.9
 six==1.17.0
