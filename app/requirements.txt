@@ -15,7 +15,7 @@ packaging==24.2
 parse==1.20.2
 parse_type==0.6.4
 pluggy==1.5.0
-pyasn1==0.6.1
+pyasn1==0.6.2
 pyasn1_modules==0.4.1
 pytest==8.3.4
 pytest-bdd==8.0.0
